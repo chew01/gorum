@@ -10,6 +10,6 @@ import (
 func main() {
 	r := router.Setup()
 	docs.SwaggerInfo.BasePath = "/"
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	r.Run()
 }

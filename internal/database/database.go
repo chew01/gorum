@@ -19,6 +19,11 @@ func Get() (*Database, error) {
 	return &Database{client: db}, nil
 }
 
-func (d Database) Init() error {
-	
+func Init() error {
+	conn, err := Get()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

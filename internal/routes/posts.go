@@ -11,10 +11,10 @@ func PostRoutes(r *gin.Engine) {
 	postRoutes.GET("/", controllers.GetPosts)
 	postRoutes.POST("/", controllers.CreatePost)
 
-	postRoutes.GET("/:post_id", controllers.GetPostContent)
+	// postRoutes.GET("/:post_id", controllers.GetPostContent)
 	postRoutes.PUT("/:post_id", controllers.UpdatePost)
 	postRoutes.DELETE("/:post_id", controllers.DeletePost)
 
-	postRoutes.GET("/:post_id/comments", controllers.GetComments)
+	// postRoutes.GET("/:post_id/comments", controllers.GetComments)
 	postRoutes.POST("/:post_id/comments", controllers.CreateComment)
 }
