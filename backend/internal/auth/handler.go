@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -27,7 +28,7 @@ func Handler(c *gin.Context) {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return []byte("JWT_SECRET"), nil // TODO: Change
+		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
 	if err != nil {

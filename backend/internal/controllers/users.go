@@ -10,6 +10,7 @@ import (
 	"gorum/internal/database"
 	"gorum/internal/models"
 	"net/http"
+	"os"
 )
 
 type UserController struct {
@@ -62,7 +63,7 @@ func (uc *UserController) LoginUser(c *gin.Context) {
 		"name": userData.Name,
 	})
 
-	tokenString, err := token.SignedString([]byte("JWT_SECRET")) // TODO: Change
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
