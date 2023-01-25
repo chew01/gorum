@@ -1,0 +1,325 @@
+definitions:
+  models.Comment:
+    properties:
+      content:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+        type: string
+      createdAt:
+        example: "2023-01-01T00:00:00.000Z"
+        type: string
+      creator:
+        $ref: '#/definitions/models.User'
+      id:
+        example: 1
+        type: integer
+      updatedAt:
+        example: "2023-01-01T00:00:00.000Z"
+        type: string
+    type: object
+  models.CommentRequest:
+    properties:
+      content:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+        type: string
+    type: object
+  models.Post:
+    properties:
+      comments:
+        items:
+          $ref: '#/definitions/models.Comment'
+        type: array
+      content:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+        type: string
+      createdAt:
+        example: "2023-01-01T00:00:00.000Z"
+        type: string
+      creator:
+        $ref: '#/definitions/models.User'
+      id:
+        example: 1
+        type: integer
+      title:
+        example: The cat jumped over the lazy dog
+        type: string
+      updatedAt:
+        example: "2023-01-01T00:00:00.000Z"
+        type: string
+    type: object
+  models.PostRequest:
+    properties:
+      content:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+        type: string
+      title:
+        example: The cat jumped over the lazy dog
+        type: string
+    type: object
+  models.SimplePost:
+    properties:
+      commentCount:
+        example: 10
+        type: integer
+      createdAt:
+        example: "2023-01-01T00:00:00.000Z"
+        type: string
+      creator:
+        $ref: '#/definitions/models.User'
+      id:
+        example: 1
+        type: integer
+      latestComments:
+        items:
+          $ref: '#/definitions/models.Comment'
+        type: array
+      synopsis:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+        type: string
+      title:
+        example: The cat jumped over the lazy dog
+        type: string
+      updatedAt:
+        example: "2023-01-01T00:00:00.000Z"
+        type: string
+    type: object
+  models.User:
+    properties:
+      name:
+        example: John Doe
+        type: string
+    type: object
+  models.UserLoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /auth:
+    get:
+      consumes:
+      - application/json
+      description: Get current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: Log in user
+      parameters:
+      - description: Request Body
+        in: body
+        name: Payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserLoginResponse'
+      tags:
+      - Auth
+  /auth/create:
+    post:
+      consumes:
+      - application/json
+      description: Create user
+      parameters:
+      - description: Request Body
+        in: body
+        name: Payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+      tags:
+      - Auth
+  /comments/{comment_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific comment
+      parameters:
+      - description: Comment ID
+        in: path
+        name: comment_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Comment'
+      tags:
+      - Comment
+    put:
+      consumes:
+      - application/json
+      description: Update a specific comment
+      parameters:
+      - description: Request Body
+        in: body
+        name: Payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.CommentRequest'
+      - description: Comment ID
+        in: path
+        name: comment_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Comment'
+      tags:
+      - Comment
+  /posts:
+    get:
+      consumes:
+      - application/json
+      description: Get all posts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.SimplePost'
+            type: array
+      tags:
+      - Post
+    post:
+      consumes:
+      - application/json
+      description: Create a new post
+      parameters:
+      - description: Request Body
+        in: body
+        name: Payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.PostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Post'
+      tags:
+      - Post
+  /posts/{post_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Post'
+      tags:
+      - Post
+    get:
+      consumes:
+      - application/json
+      description: Get full details of a specific post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Post'
+      tags:
+      - Post
+    put:
+      consumes:
+      - application/json
+      description: Update a specific post
+      parameters:
+      - description: Request Body
+        in: body
+        name: Payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.PostRequest'
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Post'
+      tags:
+      - Post
+  /posts/{post_id}/comments:
+    post:
+      consumes:
+      - application/json
+      description: Create comment on a specific post
+      parameters:
+      - description: Request Body
+        in: body
+        name: Payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.CommentRequest'
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Comment'
+      tags:
+      - Post
+swagger: "2.0"
