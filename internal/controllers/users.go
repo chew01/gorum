@@ -1,6 +1,20 @@
 package controllers
 
-import "github.com/gin-gonic/gin"
+import (
+	"database/sql"
+	"errors"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/mattn/go-sqlite3"
+	"gorum/internal/auth"
+	"gorum/internal/database"
+	"gorum/internal/models"
+	"net/http"
+)
+
+type UserController struct {
+	db *database.Database
+}
 
 // GetUser godoc
 // @Description Get current user
@@ -9,8 +23,14 @@ import "github.com/gin-gonic/gin"
 // @Produce json
 // @Success 200 {object} models.User
 // @Router /auth [get]
-func GetUser(c *gin.Context) {
+func (uc *UserController) GetUser(c *gin.Context) {
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 
+	c.JSON(http.StatusOK, models.User{Name: claims.(*auth.UserClaims).Name})
 }
 
 // LoginUser godoc
@@ -18,10 +38,37 @@ func GetUser(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Success 200 {object} models.User
+// @Param Payload body models.User true "Request Body"
+// @Success 200 {object} models.UserLoginResponse
 // @Router /auth [post]
-func LoginUser(c *gin.Context) {
+func (uc *UserController) LoginUser(c *gin.Context) {
+	var request models.User
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
+	userData, err := models.SelectUser(uc.db, request.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"name": userData.Name,
+	})
+
+	tokenString, err := token.SignedString([]byte("JWT_SECRET")) // TODO: Change
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.UserLoginResponse{Token: tokenString})
 }
 
 // CreateUser godoc
@@ -29,8 +76,27 @@ func LoginUser(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
+// @Param Payload body models.User true "Request Body"
 // @Success 200 {object} models.User
-// @Router /createuser [post]
-func CreateUser(c *gin.Context) {
+// @Router /auth/create [post]
+func (uc *UserController) CreateUser(c *gin.Context) {
+	var request models.User
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
+	userData, err := models.InsertUser(uc.db, &request)
+	if err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				c.AbortWithStatus(http.StatusConflict)
+				return
+			}
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, userData)
 }

@@ -2,19 +2,19 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"gorum/internal/auth"
 	"gorum/internal/controllers"
 )
 
-func PostRoutes(r *gin.Engine) {
+func PostRoutes(r *gin.Engine, c *controllers.MainController) {
 	postRoutes := r.Group("/posts")
 
-	postRoutes.GET("/", controllers.GetPosts)
-	postRoutes.POST("/", controllers.CreatePost)
+	postRoutes.GET("/", c.GetPosts)
+	postRoutes.POST("/", auth.Handler, c.CreatePost)
 
-	// postRoutes.GET("/:post_id", controllers.GetPostContent)
-	postRoutes.PUT("/:post_id", controllers.UpdatePost)
-	postRoutes.DELETE("/:post_id", controllers.DeletePost)
+	postRoutes.GET("/:post_id", c.GetPost)
+	postRoutes.PUT("/:post_id", auth.Handler, c.UpdatePost)
+	postRoutes.DELETE("/:post_id", auth.Handler, c.DeletePost)
 
-	// postRoutes.GET("/:post_id/comments", controllers.GetComments)
-	postRoutes.POST("/:post_id/comments", controllers.CreateComment)
+	postRoutes.POST("/:post_id/comments", auth.Handler, c.CreateComment)
 }

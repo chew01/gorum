@@ -1,16 +1,19 @@
 package router
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"gorum/internal/controllers"
+)
 import "gorum/internal/routes"
 
-func Setup() *gin.Engine {
+func Setup(c *controllers.MainController) *gin.Engine {
 	r := gin.Default()
-	setupRoutes(r)
+	setupRoutes(r, c)
 	return r
 }
 
-func setupRoutes(r *gin.Engine) {
-	routes.UserRoutes(r)
-	routes.PostRoutes(r)
-	routes.CommentRoutes(r)
+func setupRoutes(r *gin.Engine, c *controllers.MainController) {
+	routes.UserRoutes(r, c)
+	routes.PostRoutes(r, c)
+	routes.CommentRoutes(r, c)
 }

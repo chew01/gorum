@@ -2,28 +2,25 @@ package database
 
 import (
 	"database/sql"
-	"errors"
+	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"os"
 )
 
-const path string = "root.db"
-
 type Database struct {
-	client *sql.DB
+	*sql.DB
 }
 
-func Get() (*Database, error) {
-	db, err := sql.Open("sqlite3", path)
+func New(dbPath string) (*Database, error) {
+	db, err := sql.Open("sqlite3", fmt.Sprintf("%v?_foreign_keys=on", dbPath))
 	if err != nil {
-		return nil, errors.New("failed to open sql from given path")
+		return nil, err
 	}
-	return &Database{client: db}, nil
+	return &Database{db}, nil
 }
 
-func Init() error {
-	conn, err := Get()
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (db *Database) Init() error {
+	file, err := os.ReadFile("internal/database/init.sql")
+	_, err = db.Exec(string(file))
+	return err
 }

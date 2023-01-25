@@ -1,12 +1,20 @@
 package controllers
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/mattn/go-sqlite3"
+	"gorum/internal/auth"
+	"gorum/internal/database"
 	"gorum/internal/models"
 	"net/http"
 )
 
-// @BasePath /
+type PostController struct {
+	db *database.Database
+}
 
 // GetPosts godoc
 // @Description Get all posts
@@ -15,14 +23,14 @@ import (
 // @Produce json
 // @Success 200 {array} models.SimplePost
 // @Router /posts [get]
-func GetPosts(c *gin.Context) {
-	res, err := models.GetAllPostSummaries()
+func (pc *PostController) GetPosts(c *gin.Context) {
+	posts, err := models.GetSimplePosts(pc.db)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, posts)
 }
 
 // CreatePost godoc
@@ -30,10 +38,29 @@ func GetPosts(c *gin.Context) {
 // @Tags Post
 // @Accept json
 // @Produce json
+// @Param Payload body models.PostRequest true "Request Body"
 // @Success 200 {object} models.Post
 // @Router /posts [post]
-func CreatePost(c *gin.Context) {
-	c.JSON(http.StatusOK, nil)
+func (pc *PostController) CreatePost(c *gin.Context) {
+	var request models.PostRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	postData, err := models.CreatePost(pc.db, &request, claims.(*auth.UserClaims).Name)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, postData)
 }
 
 // GetPost godoc
@@ -44,8 +71,19 @@ func CreatePost(c *gin.Context) {
 // @Param post_id path int true "Post ID"
 // @Success 200 {object} models.Post
 // @Router /posts/{post_id} [get]
-func GetPost(c *gin.Context) {
+func (pc *PostController) GetPost(c *gin.Context) {
+	id := c.Param("post_id")
+	postData, err := models.GetPost(pc.db, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 
+	c.JSON(http.StatusOK, postData)
 }
 
 // UpdatePost godoc
@@ -53,11 +91,46 @@ func GetPost(c *gin.Context) {
 // @Tags Post
 // @Accept json
 // @Produce json
+// @Param Payload body models.PostRequest true "Request Body"
 // @Param post_id path int true "Post ID"
 // @Success 200 {object} models.Post
 // @Router /posts/{post_id} [put]
-func UpdatePost(c *gin.Context) {
+func (pc *PostController) UpdatePost(c *gin.Context) {
+	var request models.PostRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
+	id := c.Param("post_id")
+	check, err := models.CheckUser(pc.db, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if check.Name != claims.(*auth.UserClaims).Name {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	postData, err := models.UpdatePost(pc.db, &request, id)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, postData)
 }
 
 // DeletePost godoc
@@ -68,8 +141,37 @@ func UpdatePost(c *gin.Context) {
 // @Param post_id path int true "Post ID"
 // @Success 200 {object} models.Post
 // @Router /posts/{post_id} [delete]
-func DeletePost(c *gin.Context) {
+func (pc *PostController) DeletePost(c *gin.Context) {
+	id := c.Param("post_id")
+	check, err := models.CheckUser(pc.db, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
 
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if check.Name != claims.(*auth.UserClaims).Name {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	postData, err := models.DeletePost(pc.db, id)
+	if err != nil {
+		fmt.Println(err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, postData)
 }
 
 // CreateComment godoc
@@ -77,9 +179,35 @@ func DeletePost(c *gin.Context) {
 // @Tags Post
 // @Accept json
 // @Produce json
+// @Param Payload body models.CommentRequest true "Request Body"
 // @Param post_id path int true "Post ID"
 // @Success 200 {object} models.Comment
 // @Router /posts/{post_id}/comments [post]
-func CreateComment(c *gin.Context) {
+func (pc *PostController) CreateComment(c *gin.Context) {
+	var request models.CommentRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
 
+	id := c.Param("post_id")
+	claims, ok := c.Get("claims")
+	if !ok {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	commentData, err := models.CreateComment(pc.db, &request, id, claims.(*auth.UserClaims).Name)
+	if err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintForeignKey {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, commentData)
 }
