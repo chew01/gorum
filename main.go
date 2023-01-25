@@ -35,5 +35,5 @@ func main() {
 
 	docs.SwaggerInfo.BasePath = "/"
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	_ = r.Run()
+	_ = r.Run(":8080")
 }
