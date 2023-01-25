@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - backend_data:/etc/gorum
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    env_file:
+      - .env
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend_data:
+  caddy_data:
+  caddy_config:

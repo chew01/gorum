@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	db, err := database.New("./root.db")
+	db, err := database.New("/etc/gorum/root.db")
 
 	if err != nil {
 		fmt.Println("Error opening database connection:", err)
