@@ -6,7 +6,7 @@ FROM golang:1.20rc3 AS builder
 # Install dependencies
 ENV GO111MODULE=on
 WORKDIR $GOPATH/src/packages/goginapp/
-COPY . .
+COPY .. .
 
 # Fetch dependencies.
 # Using go get.
